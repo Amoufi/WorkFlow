@@ -1,12 +1,12 @@
 name: JavaFx Hello Todo
 
 on:
-  push:
-    tags:
-      - "v*" # Esto activará la acción solo cuando crees una etiqueta (tag) como v1.0
+      push:
+        tags:
+          -"v*"
 
 permissions:
-  contents: write
+      contents: write
 
 jobs:
   build-project:
@@ -24,27 +24,32 @@ jobs:
 
       - name: Obtener SDK de JavaFX
         run: |
-          wget https://download2.gluonhq.com/openjfx/21.0.10/openjfx-21.0.10_linux-x64_bin-sdk.zip
-          unzip openjfx-21.0.10_linux-x64_bin-sdk.zip 
+          curl -O https://download2.gluonhq.com/openjfx/21.0.10/openjfx-21.0.10_linux-x64_bin-sdk.zip
+          unzip openjfx-21.0.10_linux-x64_bin-sdk.zip
+
+
 
       - name: Compilar y Empaquetar
         run: |
-          mkdir -p build
-          javac --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls -d build/ src/dam/optativa/HelloWorldFx.java [cite: 22]
-          jar --create --file=build/HelloWorldFx.jar --manifest=manifest/MANIFEST.MF -C build/ . [cite: 28]
+          mkdir binaries
+          javac --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls -d binaries/ src/dam/optativa/HelloWorldFx.java
+          jar --create --file=binaries/HelloWorldFx.jar --manifest=manifest/MANIFEST.MF -C binaries/ .
+
 
       - name: Generar instalador DEB
         run: |
-          jpackage --input build/ --name HelloWorldFx --main-jar HelloWorldFx.jar --main-class dam.optativa.HelloWorldFx --type deb --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls [cite: 35, 36, 37, 38, 39, 40]
+          jpackage --input binaries/ --name HelloWorldFx --main-jar HelloWorldFx.jar --main-class dam.optativa.HelloWorldFx --type deb --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls
 
-      - name: Subir Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: HelloWorldFx-deb
-          path: "*.deb"
+    
 
-      - name: Crear Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload executable
+        uses: actions/Upload-artifact@v4
         with:
-          files: "*.deb"
+            name: HelloWorldFx-executable
+            path: HelloWorldFx.exe
+
+      - name: Release
+        uses: softprops/actions-gh-Release@v2
+        if: github.ref_type=='tag'
+        with:
+          files: "*.exe"
