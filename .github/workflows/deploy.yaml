@@ -1,10 +1,12 @@
 name: JavaFx Hello Todo
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+      push:
+        tags:
+          -"v*"
+
+permissions:
+      contents: write
 
 jobs:
   build-project:
@@ -25,12 +27,29 @@ jobs:
           curl -O https://download2.gluonhq.com/openjfx/21.0.10/openjfx-21.0.10_linux-x64_bin-sdk.zip
           unzip openjfx-21.0.10_linux-x64_bin-sdk.zip
 
+
+
       - name: Compilar y Empaquetar
         run: |
           mkdir binaries
           javac --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls -d binaries/ src/dam/optativa/HelloWorldFx.java
           jar --create --file=binaries/HelloWorldFx.jar --manifest=manifest/MANIFEST.MF -C binaries/ .
 
+
       - name: Generar instalador DEB
         run: |
           jpackage --input binaries/ --name HelloWorldFx --main-jar HelloWorldFx.jar --main-class dam.optativa.HelloWorldFx --type deb --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls
+
+    
+
+      - name: Upload executable
+        uses: actions/Upload-artifact@v4
+        with:
+            name: HelloWorldFx-executable
+            path: HelloWorldFx.exe
+
+      - name: Release
+        uses: softprops/actions-gh-Release@v2
+        if: github.ref_type_'tag'
+        with:
+          files: "*.exe"
