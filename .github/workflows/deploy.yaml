@@ -49,7 +49,7 @@ jobs:
             path: HelloWorldFx.exe
 
       - name: Release
-        uses: softprops/actions-gh-Release@v2
+        uses: softprops/action-gh-Release@v2
         if: github.ref_type=='tag'
         with:
           files: "*.exe"
