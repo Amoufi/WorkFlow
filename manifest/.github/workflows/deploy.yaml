@@ -1,4 +1,4 @@
-name: CI_JavaFX_Pipeline
+name: JavaFx Hello Todo
 
 on:
   push:
@@ -6,53 +6,31 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  JFX_VERSION: 21.0.10
-  APP_NAME: HelloWorldFx
-
 jobs:
-  package-linux:
+  build-project:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: '1. Sincronizar Repositorio'
+      - name: Checkout del codigo
         uses: actions/checkout@v4
 
-      - name: '2. Configurar Entorno Java'
+      - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'adopt' 
-      - name: '3. Preparar Dependencias JavaFX'
-        run: |
-          echo "Obteniendo SDK de Gluon..."
-          curl -L https://download2.gluonhq.com/openjfx/${{ env.JFX_VERSION }}/openjfx-${{ env.JFX_VERSION }}_linux-x64_bin-sdk.zip -o jfx-sdk.zip
-          unzip -q jfx-sdk.zip -d sdk-dir
+          distribution: 'zulu'
 
-      - name: '4. Fase de Compilación'
+      - name: Obtener SDK de JavaFX
         run: |
-          mkdir -p out
-          javac --module-path sdk-dir/javafx-sdk-${{ env.JFX_VERSION }}/lib \
-                --add-modules javafx.controls \
-                -d out src/dam/optativa/HelloWorldFx.java
+          curl -O https://download2.gluonhq.com/openjfx/21.0.10/openjfx-21.0.10_linux-x64_bin-sdk.zip
+          unzip openjfx-21.0.10_linux-x64_bin-sdk.zip
 
-      - name: '5. Empaquetado (JAR y DEB)'
+      - name: Compilar y Empaquetar
         run: |
-          # Generar el ejecutable Java
-          jar --create --file=out/${{ env.APP_NAME }}.jar --manifest=manifest/MANIFEST.MF -C out .
-          
-          # Crear el instalador para Debian/Ubuntu
-          jpackage --type deb \
-            --dest dist/ \
-            --name ${{ env.APP_NAME }} \
-            --input out/ \
-            --main-jar ${{ env.APP_NAME }}.jar \
-            --main-class dam.optativa.HelloWorldFx \
-            --module-path sdk-dir/javafx-sdk-${{ env.JFX_VERSION }}/lib \
-            --add-modules javafx.controls
+          mkdir binaries
+          javac --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls -d binaries/ src/dam/optativa/HelloWorldFx.java
+          jar --create --file=binaries/HelloWorldFx.jar --manifest=manifest/MANIFEST.MF -C binaries/ .
 
-      - name: '6. Subir Instalador'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-installer
-          path: dist/*.deb
+      - name: Generar instalador DEB
+        run: |
+          jpackage --input binaries/ --name HelloWorldFx --main-jar HelloWorldFx.jar --main-class dam.optativa.HelloWorldFx --type deb --module-path javafx-sdk-21.0.10/lib --add-modules javafx.controls
