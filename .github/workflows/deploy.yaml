@@ -1,9 +1,9 @@
 name: JavaFx Hello Todo
 
 on:
-      push:
-        tags:
-          -"v*"
+  push:
+    tags:
+      - "v*"
 
 permissions:
       contents: write
